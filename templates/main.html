@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %}
+    {% if user.is_authenticated %}
+        <h2>{{ user.name }} {{ user.surname }}</h2>
+        <hr>
+        <h2>{{ posts }}</h2>
+        <hr>
+        <img src="https://random.dog/12567-30449-22158.jpg" alt="&&&&&&&">
+        <video width="640" height="480" controls> <source src="https://random.dog/4f4aeb67-6eff-4484-81e9-9c9098cc74f9.mp4" type="video/mp4"> Ваш браузер не поддерживает элемент <code>video</code>. </video>
+        {% for post in posts %}
+
+               <div style=" display: inline-block; width: 80vw; border: 10px solid grey; text-align: left">
+                   <p><img src='../media/{{ post.image }}' alt="img"></p>
+                   <h1 style="margin: 0px; display: inline">{{ post.title }}</h1>
+                   <h3 style="display: inline; border: 2px solid black">{{ post.author.name }}</h3>
+                   <br>
+                   <p style="display: inline-flex; border: 3px solid brown; margin: 0px">{{ post.text }}</p>
+               </div>
+        {% endfor %}
+    {% else %}
+        <h2>Вы не авторизированы!</h2>
+    {% endif %}
+{% endblock %}
