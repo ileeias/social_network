@@ -28,7 +28,7 @@ urlpatterns = [
     path('my_comment', CommentApiView.as_view()),
     path('my_friend', FriendApiView.as_view()),
     path('ppl_search', FindpeopleApiView.as_view()),
-    path('test', TestApiView.as_view()),
+    path('fast', FastPostApiView.as_view()),
     path('like', LikePostApiView.as_view()),
     path('dislike', DislikePostApiView.as_view()),
 ]

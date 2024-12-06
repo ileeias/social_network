@@ -10,46 +10,37 @@ from django.contrib.auth import login, authenticate, user_logged_out
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework import status
 
-class TestApiView(APIView):
-    permission_classes = [IsAuthenticated]
-    import requests
-    from django.core.files.base import ContentFile
+class FastPostApiView(APIView):
+    permission_classes = [AllowAny]
+
     def get(self, request):
         import requests
-        response = requests.get('https://random.dog/woof.json')
-        if response.status_code == 200:
-            data = response.json()
-            filename = data['url'].split("/")[-1]
-            format = filename.split(".")[-1]
-            processed_data = { 'count': len(data), 'results': data }
-            image = requests.get(data['url'])
-            image_content = image.content
-            image_file = self.ContentFile(image_content, name=filename)
-            return Response(image_file, status=status.HTTP_200_OK)
-        else:
-            return Response({'detail': 'Ошибка при получении данных с внешнего API'}, status=response.status_code)
-
-    def post(self, request):
-        import requests
         from django.core.files.base import ContentFile
-        response = requests.get('https://random.dog/woof.json')
-        if response.status_code == 200:
-            data = response.json()
-            filename = data['url'].split("/")[-1]
-            format = filename.split(".")[-1]
-            if format == 'mp4':
-                pass
+        while True:
+            response = requests.get('https://random.dog/woof.json')
+            if response.status_code == 200:
+                image_url = response.json()['url']
+                image_format = image_url.split('.')[-1]
+                if image_format in ['jpg', 'jpeg', 'png']:
+                    break
             else:
-                image_file = ContentFile((data['url']).content)
-                post = Posts.objects.create(
-                    author=CustomUser.objects.get(id=request.user.id),
-                    title='Пост со сгенерированной картинкой',
-                    text='Моё дополнение к увиденному:'
-                )
-                post.image.save(filename, image_file, save=True)
-                return Response({'message': "Ваш пост сгенерирован!"}, status=status.HTTP_201_CREATED)\
+                return Response(data={'message': 'API is not available'}, status=status.HTTP_200_OK)
 
-
+        image_response = requests.get(image_url)
+        print(image_response.content)
+        if image_response.status_code == 200:
+            image_content = image_response.content
+            image_file = ContentFile(image_content)
+            post = Posts(
+                author=CustomUser.objects.get(id=request.user.id),
+                title='Пост со сгенерированной картинкой',
+                text='Моё дополнение к увиденному:'
+            )
+            post.save()
+            post.image.save(f"dog.{image_format}", image_file, save=True)
+            data = PostSerializer(instance=post, many=False).data
+            return Response(data=data, status=status.HTTP_200_OK)
+        return Response(data={'message': 'Image is not available'}, status=status.HTTP_200_OK)
 class LikePostApiView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -166,21 +157,17 @@ class FindpeopleApiView(APIView):
     def get(self, request):
         order = request.GET.get('order')
         search = request.GET.get('search')
-        users_by_names = CustomUser.objects.filter(name__contains=search) ?
-        users_by_surnames = CustomUser.objects.filter(surname__contains=search)
+        users = CustomUser.objects.filter(name__contains=search, surname__contains=search)
         # __search -> Ищет слово целиком
         # __contains -> Ищет символы без регистра
         # __icontains -> Ищет символы c регистра
         if order is not None:
             if order == 'desc':
-                users_by_names = users_by_names.order_by('-name')
-                users_by_surnames = users_by_surnames.order_by('-surname')
+                users = users.order_by('-name', '-surname')
             elif order == 'asc':
-                users_by_names = users_by_names.order_by('name')
-                users_by_surnames = users_by_surnames.order_by('surname')
-        data = FindUserSerializer(users_by_names, many=True).data
-        data2 = FindUserSerializer(users_by_surnames, many=True).data
-        return Response([data,data2], status=status.HTTP_200_OK)
+                users_by_names = users.order_by('name', 'surname')
+        data = FindUserSerializer(users, many=True).data
+        return Response(data=data, status=status.HTTP_200_OK)
 
     def post(self, request):
         self.permission_classes = [IsAuthenticated]
